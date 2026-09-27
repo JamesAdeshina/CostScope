@@ -1,0 +1,67 @@
+[project]
+name = "costscope"
+version = "0.1.0"
+description = "UK cost-of-living data engineering and analytics platform"
+requires-python = ">=3.12"
+
+
+# ============================================================
+# Ruff
+# ============================================================
+
+[tool.ruff]
+line-length = 88
+target-version = "py312"
+
+exclude = [
+    ".venv",
+    "data",
+    "frontend/node_modules",
+]
+
+
+[tool.ruff.lint]
+select = [
+    "E",
+    "F",
+    "I",
+    "B",
+    "UP",
+]
+
+
+# ============================================================
+# Pytest
+# ============================================================
+
+[tool.pytest.ini_options]
+testpaths = [
+    "backend/tests",
+    "tests",
+]
+
+python_files = [
+    "test_*.py",
+]
+
+addopts = [
+    "-ra",
+    "--strict-markers",
+]
+
+
+# ============================================================
+# Coverage
+# ============================================================
+
+[tool.coverage.run]
+branch = true
+source = [
+    "backend",
+    "data_pipeline",
+]
+
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = false
