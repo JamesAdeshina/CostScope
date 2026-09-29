@@ -10,17 +10,34 @@ PROJECT_ROOT = Path(__file__).resolve().parents[3]
 
 
 class APISettings(BaseSettings):
-    """Runtime settings for the CostScope API."""
+    """Runtime configuration for the CostScope API."""
 
-    app_name: str = "CostScope API"
+    # ---------------------------------------------------------
+    # Application
+    # ---------------------------------------------------------
+    app_name: str = "CostScope"
     app_env: str = "development"
     debug: bool = True
 
+    # ---------------------------------------------------------
+    # Logging
+    # ---------------------------------------------------------
     log_level: str = "INFO"
     log_dir: str = "logs"
 
+    # ---------------------------------------------------------
+    # Database
+    # ---------------------------------------------------------
     database_url: str | None = None
 
+    # ---------------------------------------------------------
+    # External services
+    # ---------------------------------------------------------
+    postcodes_api_url: str = "https://api.postcodes.io"
+
+    # ---------------------------------------------------------
+    # Gold data
+    # ---------------------------------------------------------
     gold_data_dir: str = "data/gold"
 
     model_config = SettingsConfigDict(
@@ -32,7 +49,7 @@ class APISettings(BaseSettings):
 
     @property
     def gold_path(self) -> Path:
-        """Return the absolute Gold-layer path."""
+        """Return the absolute Gold-layer directory."""
 
         return PROJECT_ROOT / self.gold_data_dir
 

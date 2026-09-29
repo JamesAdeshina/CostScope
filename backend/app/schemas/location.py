@@ -8,7 +8,7 @@ from pydantic import BaseModel
 
 
 class LocationSummary(BaseModel):
-    """Location metadata returned by the API."""
+    """Location metadata returned by CostScope."""
 
     location_id: str
     location_code: str
@@ -17,7 +17,7 @@ class LocationSummary(BaseModel):
 
 
 class RentOverview(BaseModel):
-    """Latest published private-rent metrics."""
+    """Latest published headline private-rent metrics."""
 
     monthly_rent: float
     unit: str
@@ -27,7 +27,7 @@ class RentOverview(BaseModel):
 
 
 class SourceMetadata(BaseModel):
-    """Source information for an API metric."""
+    """Source information for a CostScope metric."""
 
     source_code: str
     publisher: str
@@ -35,7 +35,7 @@ class SourceMetadata(BaseModel):
 
 
 class LocationOverviewResponse(BaseModel):
-    """CostScope location overview response."""
+    """Latest CostScope overview for one location."""
 
     location: LocationSummary
     rent: RentOverview
@@ -49,3 +49,21 @@ class LocationSearchResult(BaseModel):
     location_code: str
     name: str
     region_or_country: str | None
+
+
+class MetricHistoryObservation(BaseModel):
+    """One historical metric observation."""
+
+    reference_period: date
+    value: float
+
+
+class MetricHistoryResponse(BaseModel):
+    """Historical CostScope metric series."""
+
+    location: LocationSummary
+    metric_code: str
+    metric_name: str
+    unit: str
+    observations: list[MetricHistoryObservation]
+    source: SourceMetadata

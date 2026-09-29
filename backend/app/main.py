@@ -11,6 +11,7 @@ from fastapi import FastAPI
 
 from backend.app.api.routes.health import router as health_router
 from backend.app.api.routes.locations import router as locations_router
+from backend.app.api.routes.postcodes import router as postcodes_router
 from backend.app.core.config import settings as api_settings
 from backend.app.core.logging_config import get_api_logger
 
@@ -58,6 +59,8 @@ app = FastAPI(
 app.include_router(health_router)
 
 app.include_router(locations_router)
+
+app.include_router(postcodes_router)
 
 
 @app.get("/")

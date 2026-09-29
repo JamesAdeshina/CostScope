@@ -1,5 +1,5 @@
 """
-CostScope location and housing API routes.
+CostScope location API routes.
 """
 
 from fastapi import (
@@ -13,11 +13,13 @@ from backend.app.repositories.private_rent_repository import (
     GoldDataNotBuiltError,
     LocationNotFoundError,
     get_latest_rent_overview,
+    get_metric_history,
     search_locations,
 )
 from backend.app.schemas.location import (
     LocationOverviewResponse,
     LocationSearchResult,
+    MetricHistoryResponse,
 )
 
 router = APIRouter(
@@ -44,7 +46,7 @@ def search(
 
     except GoldDataNotBuiltError as exc:
         raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            status_code=(status.HTTP_503_SERVICE_UNAVAILABLE),
             detail=str(exc),
         ) from exc
 
@@ -56,19 +58,54 @@ def search(
 def location_overview(
     location_code: str,
 ) -> dict[str, object]:
-    """Return the latest available CostScope location overview."""
+    """Return latest metrics for one CostScope location."""
 
     try:
         return get_latest_rent_overview(location_code)
 
     except LocationNotFoundError as exc:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
+            status_code=(status.HTTP_404_NOT_FOUND),
             detail=str(exc),
         ) from exc
 
     except GoldDataNotBuiltError as exc:
         raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            status_code=(status.HTTP_503_SERVICE_UNAVAILABLE),
+            detail=str(exc),
+        ) from exc
+
+
+@router.get(
+    "/locations/{location_code}/history",
+    response_model=MetricHistoryResponse,
+)
+def location_history(
+    location_code: str,
+    metric: str = Query(
+        default="rent",
+        min_length=2,
+        max_length=100,
+    ),
+) -> dict[str, object]:
+    """
+    Return an ordered historical metric series for one location.
+    """
+
+    try:
+        return get_metric_history(
+            location_code,
+            metric,
+        )
+
+    except LocationNotFoundError as exc:
+        raise HTTPException(
+            status_code=(status.HTTP_404_NOT_FOUND),
+            detail=str(exc),
+        ) from exc
+
+    except GoldDataNotBuiltError as exc:
+        raise HTTPException(
+            status_code=(status.HTTP_503_SERVICE_UNAVAILABLE),
             detail=str(exc),
         ) from exc

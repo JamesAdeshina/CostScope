@@ -235,3 +235,117 @@ def get_latest_rent_overview(
             "dataset": ("Price Index of Private Rents, UK: monthly price statistics"),
         },
     }
+
+
+def get_metric_history(
+    location_code: str,
+    metric: str,
+) -> dict[str, object]:
+    """
+    Return historical observations for one location and metric.
+
+    Parameters
+    ----------
+    location_code:
+        Official geography code or internal CostScope location ID.
+
+    metric:
+        Public metric alias or canonical metric code.
+
+    Returns
+    -------
+    dict
+        Location metadata, metric metadata and ordered observations.
+    """
+
+    tables = load_gold_tables()
+
+    location = find_location(location_code)
+
+    facts = tables["fact_cost_metric"]
+
+    metrics = tables["dim_metric"]
+
+    dates = tables["dim_date"]
+
+    metric_aliases = {
+        "rent": "RENT_MONTHLY",
+        "monthly_rent": "RENT_MONTHLY",
+        "rent_monthly": "RENT_MONTHLY",
+        "rent_monthly_change": "RENT_MONTHLY_CHANGE",
+        "rent_annual_change": "RENT_ANNUAL_CHANGE",
+    }
+
+    requested_metric = metric.strip().lower()
+
+    canonical_code = metric_aliases.get(
+        requested_metric,
+        metric.strip().upper(),
+    )
+
+    metric_rows = metrics.loc[metrics["metric_code"] == canonical_code]
+
+    if metric_rows.empty:
+        raise LocationNotFoundError(f"Metric not found: {metric}")
+
+    metric_row = metric_rows.iloc[0]
+
+    location_key = int(location["location_key"])
+
+    metric_key = int(metric_row["metric_key"])
+
+    history = facts.loc[
+        (facts["location_key"] == location_key)
+        & (facts["metric_key"] == metric_key)
+        & (facts["is_published"])
+    ].copy()
+
+    history = history.merge(
+        dates[
+            [
+                "date_key",
+                "date",
+            ]
+        ],
+        on="date_key",
+        how="left",
+        validate="many_to_one",
+    )
+
+    history = history.sort_values("date")
+
+    official_code = location["official_area_code"]
+
+    observations = [
+        {
+            "reference_period": (pd.Timestamp(row["date"]).date()),
+            "value": float(row["value"]),
+        }
+        for _, row in history.iterrows()
+    ]
+
+    return {
+        "location": {
+            "location_id": str(location["location_id"]),
+            "location_code": (
+                str(official_code)
+                if pd.notna(official_code)
+                else str(location["location_id"])
+            ),
+            "name": str(location["location_name"]),
+            "region_or_country": (
+                None
+                if pd.isna(location["region_or_country_name"])
+                else str(location["region_or_country_name"])
+            ),
+        },
+        "metric_code": str(metric_row["metric_code"]),
+        "metric_name": str(metric_row["metric_name"]),
+        "unit": str(metric_row["unit"]),
+        "observations": observations,
+        "source": {
+            "source_code": "ONS_PIPR",
+            "publisher": ("Office for National Statistics"),
+            "dataset": ("Price Index of Private Rents, UK: monthly price statistics"),
+        },
+    }
