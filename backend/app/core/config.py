@@ -6,19 +6,25 @@ from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-PROJECT_ROOT = Path(__file__).resolve().parents[3]
+
+PROJECT_ROOT = Path(
+    __file__
+).resolve().parents[3]
 
 
 class APISettings(BaseSettings):
-    """Configuration used by the CostScope API."""
+    """Runtime settings for the CostScope API."""
 
-    app_name: str = "CostScope"
+    app_name: str = "CostScope API"
     app_env: str = "development"
     debug: bool = True
 
+    log_level: str = "INFO"
+    log_dir: str = "logs"
+
     database_url: str | None = None
 
-    postcodes_api_url: str = "https://api.postcodes.io"
+    gold_data_dir: str = "data/gold"
 
     model_config = SettingsConfigDict(
         env_file=PROJECT_ROOT / ".env",
@@ -27,5 +33,14 @@ class APISettings(BaseSettings):
         extra="ignore",
     )
 
+    @property
+    def gold_path(self) -> Path:
+        """Return the absolute Gold-layer path."""
 
-api_settings = APISettings()
+        return (
+            PROJECT_ROOT
+            / self.gold_data_dir
+        )
+
+
+settings = APISettings()

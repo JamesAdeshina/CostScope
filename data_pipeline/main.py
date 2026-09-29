@@ -1,26 +1,27 @@
 """
-CostScope data pipeline entry point.
+Main CostScope data pipeline orchestrator.
 
-The pipeline will eventually orchestrate:
+Current pipeline:
 
-    Extract
+    ONS Private Rent
         ↓
-    Bronze
+    Download
         ↓
-    Validate
+    Bronze storage
         ↓
-    Transform
+    Metadata
         ↓
-    Silver
+    Workbook inspection
+
+Future stages will add:
+
+    Validation
         ↓
-    Model
+    Silver transformation
         ↓
-    Gold
+    Gold dimensional model
         ↓
     PostgreSQL
-
-At this stage the module verifies that the project configuration,
-directories and logging infrastructure are working correctly.
 """
 
 from __future__ import annotations
@@ -28,19 +29,19 @@ from __future__ import annotations
 import sys
 
 from data_pipeline.config.settings import settings
+from data_pipeline.extract.ons.private_rent import (
+    extract_private_rent,
+)
+from data_pipeline.quality.ons.inspect_private_rent import (
+    inspect_workbook,
+)
 from data_pipeline.utils.logging_config import get_logger
 
 logger = get_logger(__name__)
 
 
 def initialise_directories() -> None:
-    """
-    Ensure required runtime directories exist.
-
-    Git tracks the base directories using .gitkeep files, but this
-    function makes pipeline execution resilient if a directory is removed
-    locally or when the project runs in CI.
-    """
+    """Ensure runtime directories exist."""
 
     directories = [
         settings.bronze_path,
@@ -55,14 +56,9 @@ def initialise_directories() -> None:
             exist_ok=True,
         )
 
-        logger.debug(
-            "Verified directory: %s",
-            directory,
-        )
-
 
 def run_pipeline() -> None:
-    """Run the CostScope pipeline."""
+    """Run the current CostScope data pipeline."""
 
     logger.info("=" * 70)
     logger.info("CostScope data pipeline started")
@@ -75,24 +71,28 @@ def run_pipeline() -> None:
 
     initialise_directories()
 
-    # Dataset pipelines will be introduced incrementally.
-    #
-    # The first implementation will be:
-    #
+    # ---------------------------------------------------------
     # ONS Private Rent
-    #     ↓
-    # Bronze
-    #     ↓
-    # Validation
-    #     ↓
-    # Silver
-    #     ↓
-    # Gold
-    #
-    # Keeping this entry point small allows individual dataset pipelines
-    # to remain independently testable.
+    # ---------------------------------------------------------
 
-    logger.info("Pipeline infrastructure initialised successfully.")
+    workbook_path, metadata_path = extract_private_rent()
+
+    logger.info(
+        "Bronze workbook: %s",
+        workbook_path,
+    )
+
+    logger.info(
+        "Extraction metadata: %s",
+        metadata_path,
+    )
+
+    workbook_structure = inspect_workbook(workbook_path)
+
+    logger.info(
+        "Workbook inspection complete: %s worksheets detected",
+        len(workbook_structure),
+    )
 
     logger.info("=" * 70)
     logger.info("CostScope pipeline completed successfully")
@@ -100,17 +100,7 @@ def run_pipeline() -> None:
 
 
 def main() -> int:
-    """
-    CLI entry point.
-
-    Returns
-    -------
-    int
-        Operating-system exit code.
-
-        0 = success
-        1 = failure
-    """
+    """CLI entry point."""
 
     try:
         run_pipeline()
@@ -118,7 +108,7 @@ def main() -> int:
         return 0
 
     except Exception:
-        logger.exception("CostScope pipeline failed with an unhandled exception.")
+        logger.exception("CostScope pipeline failed")
 
         return 1
 
