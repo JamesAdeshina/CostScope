@@ -6,10 +6,7 @@ from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-
-PROJECT_ROOT = Path(
-    __file__
-).resolve().parents[3]
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
 
 
 class APISettings(BaseSettings):
@@ -37,10 +34,7 @@ class APISettings(BaseSettings):
     def gold_path(self) -> Path:
         """Return the absolute Gold-layer path."""
 
-        return (
-            PROJECT_ROOT
-            / self.gold_data_dir
-        )
+        return PROJECT_ROOT / self.gold_data_dir
 
 
 settings = APISettings()

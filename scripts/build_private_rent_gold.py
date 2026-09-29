@@ -15,7 +15,6 @@ from data_pipeline.quality.gold.private_rent_quality import (
 )
 from data_pipeline.utils.logging_config import get_logger
 
-
 logger = get_logger(__name__)
 
 
@@ -28,13 +27,9 @@ def main() -> None:
     logger.info("Running Gold quality checks")
     logger.info("=" * 70)
 
-    validate_gold_tables(
-        tables
-    )
+    validate_gold_tables(tables)
 
-    output_paths = write_gold_tables(
-        tables
-    )
+    output_paths = write_gold_tables(tables)
 
     logger.info("=" * 70)
     logger.info("Gold build completed successfully")

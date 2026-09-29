@@ -29,10 +29,7 @@ class LocationNotFoundError(LookupError):
 def load_gold_tables() -> dict[str, pd.DataFrame]:
     """Load CostScope Gold tables once per API process."""
 
-    root = (
-        settings.gold_path
-        / "cost_scope"
-    )
+    root = settings.gold_path / "cost_scope"
 
     table_names = [
         "dim_location",
@@ -44,10 +41,7 @@ def load_gold_tables() -> dict[str, pd.DataFrame]:
     tables: dict[str, pd.DataFrame] = {}
 
     for table_name in table_names:
-        path = (
-            root
-            / f"{table_name}.parquet"
-        )
+        path = root / f"{table_name}.parquet"
 
         if not path.exists():
             raise GoldDataNotBuiltError(
@@ -55,9 +49,7 @@ def load_gold_tables() -> dict[str, pd.DataFrame]:
                 "Run `python -m scripts.build_private_rent_gold` first."
             )
 
-        tables[
-            table_name
-        ] = pd.read_parquet(
+        tables[table_name] = pd.read_parquet(
             path,
             engine="pyarrow",
         )
@@ -72,11 +64,7 @@ def search_locations(
 ) -> list[dict[str, object]]:
     """Search Gold locations by name or official geography code."""
 
-    locations = (
-        load_gold_tables()[
-            "dim_location"
-        ]
-    )
+    locations = load_gold_tables()["dim_location"]
 
     query = query.strip()
 
@@ -95,9 +83,7 @@ def search_locations(
     )
 
     code_match = (
-        locations[
-            "official_area_code"
-        ]
+        locations["official_area_code"]
         .astype("string")
         .str.contains(
             query,
@@ -108,9 +94,7 @@ def search_locations(
     )
 
     matches = (
-        locations.loc[
-            name_match | code_match
-        ]
+        locations.loc[name_match | code_match]
         .sort_values(
             [
                 "location_name",
@@ -120,42 +104,24 @@ def search_locations(
         .head(limit)
     )
 
-    results: list[
-        dict[str, object]
-    ] = []
+    results: list[dict[str, object]] = []
 
     for _, row in matches.iterrows():
-        official_code = row[
-            "official_area_code"
-        ]
+        official_code = row["official_area_code"]
 
         location_code = (
-            str(official_code)
-            if pd.notna(official_code)
-            else str(row["location_id"])
+            str(official_code) if pd.notna(official_code) else str(row["location_id"])
         )
 
         results.append(
             {
-                "location_id": str(
-                    row["location_id"]
-                ),
+                "location_id": str(row["location_id"]),
                 "location_code": location_code,
-                "name": str(
-                    row["location_name"]
-                ),
+                "name": str(row["location_name"]),
                 "region_or_country": (
                     None
-                    if pd.isna(
-                        row[
-                            "region_or_country_name"
-                        ]
-                    )
-                    else str(
-                        row[
-                            "region_or_country_name"
-                        ]
-                    )
+                    if pd.isna(row["region_or_country_name"])
+                    else str(row["region_or_country_name"])
                 ),
             }
         )
@@ -168,32 +134,15 @@ def find_location(
 ) -> pd.Series:
     """Find one location by official code or internal location ID."""
 
-    locations = (
-        load_gold_tables()[
-            "dim_location"
-        ]
-    )
+    locations = load_gold_tables()["dim_location"]
 
     matches = locations.loc[
-        (
-            locations[
-                "location_id"
-            ].astype(str)
-            == location_code
-        )
-        |
-        (
-            locations[
-                "official_area_code"
-            ].astype(str)
-            == location_code
-        )
+        (locations["location_id"].astype(str) == location_code)
+        | (locations["official_area_code"].astype(str) == location_code)
     ]
 
     if matches.empty:
-        raise LocationNotFoundError(
-            f"Location not found: {location_code}"
-        )
+        raise LocationNotFoundError(f"Location not found: {location_code}")
 
     return matches.iloc[0]
 
@@ -205,185 +154,84 @@ def get_latest_rent_overview(
 
     tables = load_gold_tables()
 
-    location = find_location(
-        location_code
-    )
+    location = find_location(location_code)
 
-    facts = tables[
-        "fact_cost_metric"
-    ]
+    facts = tables["fact_cost_metric"]
 
-    metrics = tables[
-        "dim_metric"
-    ]
+    metrics = tables["dim_metric"]
 
-    dates = tables[
-        "dim_date"
-    ]
+    dates = tables["dim_date"]
 
-    metric_lookup = (
-        metrics.set_index(
-            "metric_code"
-        )["metric_key"]
-        .to_dict()
-    )
+    metric_lookup = metrics.set_index("metric_code")["metric_key"].to_dict()
 
-    rent_metric_key = metric_lookup[
-        "RENT_MONTHLY"
-    ]
+    rent_metric_key = metric_lookup["RENT_MONTHLY"]
 
-    location_key = int(
-        location["location_key"]
-    )
+    location_key = int(location["location_key"])
 
     rent_rows = facts.loc[
-        (
-            facts["location_key"]
-            == location_key
-        )
-        &
-        (
-            facts["metric_key"]
-            == rent_metric_key
-        )
-        &
-        (
-            facts["is_published"]
-        )
+        (facts["location_key"] == location_key)
+        & (facts["metric_key"] == rent_metric_key)
+        & (facts["is_published"])
     ]
 
     if rent_rows.empty:
         raise LocationNotFoundError(
-            "No published rent observation "
-            f"for {location_code}."
+            f"No published rent observation for {location_code}."
         )
 
-    latest_rent = (
-        rent_rows.sort_values(
-            "date_key"
-        )
-        .iloc[-1]
-    )
+    latest_rent = rent_rows.sort_values("date_key").iloc[-1]
 
-    latest_date_key = int(
-        latest_rent["date_key"]
-    )
+    latest_date_key = int(latest_rent["date_key"])
 
     period_facts = facts.loc[
-        (
-            facts["location_key"]
-            == location_key
-        )
-        &
-        (
-            facts["date_key"]
-            == latest_date_key
-        )
+        (facts["location_key"] == location_key) & (facts["date_key"] == latest_date_key)
     ]
 
     def metric_value(
         metric_code: str,
     ) -> float | None:
-        metric_key = metric_lookup[
-            metric_code
-        ]
+        metric_key = metric_lookup[metric_code]
 
         rows = period_facts.loc[
-            (
-                period_facts[
-                    "metric_key"
-                ]
-                == metric_key
-            )
-            &
-            (
-                period_facts[
-                    "is_published"
-                ]
-            )
+            (period_facts["metric_key"] == metric_key) & (period_facts["is_published"])
         ]
 
         if rows.empty:
             return None
 
-        return float(
-            rows.iloc[0]["value"]
-        )
+        return float(rows.iloc[0]["value"])
 
-    date_row = dates.loc[
-        dates["date_key"]
-        == latest_date_key
-    ].iloc[0]
+    date_row = dates.loc[dates["date_key"] == latest_date_key].iloc[0]
 
-    metric_row = metrics.loc[
-        metrics["metric_key"]
-        == rent_metric_key
-    ].iloc[0]
+    metric_row = metrics.loc[metrics["metric_key"] == rent_metric_key].iloc[0]
 
-    official_code = location[
-        "official_area_code"
-    ]
+    official_code = location["official_area_code"]
 
     return {
         "location": {
-            "location_id": str(
-                location["location_id"]
-            ),
+            "location_id": str(location["location_id"]),
             "location_code": (
                 str(official_code)
                 if pd.notna(official_code)
-                else str(
-                    location["location_id"]
-                )
+                else str(location["location_id"])
             ),
-            "name": str(
-                location["location_name"]
-            ),
+            "name": str(location["location_name"]),
             "region_or_country": (
                 None
-                if pd.isna(
-                    location[
-                        "region_or_country_name"
-                    ]
-                )
-                else str(
-                    location[
-                        "region_or_country_name"
-                    ]
-                )
+                if pd.isna(location["region_or_country_name"])
+                else str(location["region_or_country_name"])
             ),
         },
         "rent": {
-            "monthly_rent": float(
-                latest_rent["value"]
-            ),
-            "unit": str(
-                metric_row["unit"]
-            ),
-            "reference_period": (
-                pd.Timestamp(
-                    date_row["date"]
-                ).date()
-            ),
-            "monthly_change_percent": (
-                metric_value(
-                    "RENT_MONTHLY_CHANGE"
-                )
-            ),
-            "annual_change_percent": (
-                metric_value(
-                    "RENT_ANNUAL_CHANGE"
-                )
-            ),
+            "monthly_rent": float(latest_rent["value"]),
+            "unit": str(metric_row["unit"]),
+            "reference_period": (pd.Timestamp(date_row["date"]).date()),
+            "monthly_change_percent": (metric_value("RENT_MONTHLY_CHANGE")),
+            "annual_change_percent": (metric_value("RENT_ANNUAL_CHANGE")),
         },
         "source": {
             "source_code": "ONS_PIPR",
-            "publisher": (
-                "Office for National Statistics"
-            ),
-            "dataset": (
-                "Price Index of Private Rents, "
-                "UK: monthly price statistics"
-            ),
+            "publisher": ("Office for National Statistics"),
+            "dataset": ("Price Index of Private Rents, UK: monthly price statistics"),
         },
     }

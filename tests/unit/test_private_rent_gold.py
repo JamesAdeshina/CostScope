@@ -62,32 +62,21 @@ def test_stable_integer_key_is_deterministic() -> None:
 def test_dim_location_has_one_derby_record() -> None:
     """Repeated Silver observations should create one location."""
 
-    result = build_dim_location(
-        sample_silver()
-    )
+    result = build_dim_location(sample_silver())
 
     assert len(result) == 1
 
-    assert (
-        result.iloc[0][
-            "official_area_code"
-        ]
-        == "E06000015"
-    )
+    assert result.iloc[0]["official_area_code"] == "E06000015"
 
 
 def test_dim_date_contains_unique_months() -> None:
     """Reporting periods should create unique date rows."""
 
-    result = build_dim_date(
-        sample_silver()
-    )
+    result = build_dim_date(sample_silver())
 
     assert len(result) == 2
 
-    assert result[
-        "date_key"
-    ].is_unique
+    assert result["date_key"].is_unique
 
 
 def test_metric_codes_are_unique() -> None:
@@ -95,15 +84,6 @@ def test_metric_codes_are_unique() -> None:
 
     result = build_dim_metric()
 
-    assert result[
-        "metric_code"
-    ].is_unique
+    assert result["metric_code"].is_unique
 
-    assert (
-        "RENT_MONTHLY"
-        in set(
-            result[
-                "metric_code"
-            ]
-        )
-    )
+    assert "RENT_MONTHLY" in set(result["metric_code"])

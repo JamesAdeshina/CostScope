@@ -20,7 +20,6 @@ from backend.app.schemas.location import (
     LocationSearchResult,
 )
 
-
 router = APIRouter(
     prefix="/api/v1",
     tags=["locations"],
@@ -29,9 +28,7 @@ router = APIRouter(
 
 @router.get(
     "/search",
-    response_model=list[
-        LocationSearchResult
-    ],
+    response_model=list[LocationSearchResult],
 )
 def search(
     q: str = Query(
@@ -43,9 +40,7 @@ def search(
     """Search CostScope locations."""
 
     try:
-        return search_locations(
-            q
-        )
+        return search_locations(q)
 
     except GoldDataNotBuiltError as exc:
         raise HTTPException(
@@ -64,9 +59,7 @@ def location_overview(
     """Return the latest available CostScope location overview."""
 
     try:
-        return get_latest_rent_overview(
-            location_code
-        )
+        return get_latest_rent_overview(location_code)
 
     except LocationNotFoundError as exc:
         raise HTTPException(

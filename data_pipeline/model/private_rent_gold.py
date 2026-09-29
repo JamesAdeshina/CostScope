@@ -25,7 +25,6 @@ import pandas as pd
 from data_pipeline.config.settings import settings
 from data_pipeline.utils.logging_config import get_logger
 
-
 logger = get_logger(__name__)
 
 
@@ -96,8 +95,7 @@ METRIC_DEFINITIONS = [
         "category": "Housing",
         "unit": "GBP/month",
         "description": (
-            "Average monthly private rent for properties with "
-            "four or more bedrooms."
+            "Average monthly private rent for properties with four or more bedrooms."
         ),
     },
     {
@@ -152,9 +150,7 @@ def stable_integer_key(
 
     payload = f"{namespace}:{value}".encode()
 
-    digest = hashlib.sha256(
-        payload
-    ).digest()
+    digest = hashlib.sha256(payload).digest()
 
     key = int.from_bytes(
         digest[:8],
@@ -171,12 +167,7 @@ def stable_integer_key(
 def load_silver_private_rent() -> pd.DataFrame:
     """Load the validated ONS Private Rent Silver dataset."""
 
-    source_path = (
-        settings.silver_path
-        / "ons"
-        / "private_rent"
-        / "private_rent.parquet"
-    )
+    source_path = settings.silver_path / "ons" / "private_rent" / "private_rent.parquet"
 
     if not source_path.exists():
         raise FileNotFoundError(
@@ -224,9 +215,7 @@ def build_dim_location(
         )
     )
 
-    dimension["has_official_code"] = (
-        dimension["area_code"].notna()
-    )
+    dimension["has_official_code"] = dimension["area_code"].notna()
 
     dimension = dimension.rename(
         columns={
@@ -251,9 +240,7 @@ def build_dim_location(
             "location_name",
             "location_id",
         ]
-    ).reset_index(
-        drop=True
-    )
+    ).reset_index(drop=True)
 
 
 def build_dim_date(
@@ -277,28 +264,15 @@ def build_dim_date(
         .reset_index(drop=True)
     )
 
-    dates["date_key"] = (
-        dates["date"].dt.strftime(
-            "%Y%m%d"
-        )
-        .astype(int)
-    )
+    dates["date_key"] = dates["date"].dt.strftime("%Y%m%d").astype(int)
 
-    dates["year"] = (
-        dates["date"].dt.year
-    )
+    dates["year"] = dates["date"].dt.year
 
-    dates["quarter"] = (
-        dates["date"].dt.quarter
-    )
+    dates["quarter"] = dates["date"].dt.quarter
 
-    dates["month"] = (
-        dates["date"].dt.month
-    )
+    dates["month"] = dates["date"].dt.month
 
-    dates["month_name"] = (
-        dates["date"].dt.month_name()
-    )
+    dates["month_name"] = dates["date"].dt.month_name()
 
     return dates[
         [
@@ -315,9 +289,7 @@ def build_dim_date(
 def build_dim_metric() -> pd.DataFrame:
     """Build CostScope's rent metric dimension."""
 
-    dimension = pd.DataFrame(
-        METRIC_DEFINITIONS
-    )
+    dimension = pd.DataFrame(METRIC_DEFINITIONS)
 
     return dimension[
         [
@@ -345,25 +317,17 @@ def build_fact_cost_metric(
     """
 
     metric_lookup = {
-        row["source_column"]: row["metric_key"]
-        for _, row in dim_metric.iterrows()
+        row["source_column"]: row["metric_key"] for _, row in dim_metric.iterrows()
     }
 
-    source_columns = list(
-        metric_lookup
-    )
+    source_columns = list(metric_lookup)
 
-    missing_columns = (
-        set(source_columns)
-        - set(silver.columns)
-    )
+    missing_columns = set(source_columns) - set(silver.columns)
 
     if missing_columns:
         raise ValueError(
             "Silver dataset is missing metric columns: "
-            + ", ".join(
-                sorted(missing_columns)
-            )
+            + ", ".join(sorted(missing_columns))
         )
 
     fact = silver[
@@ -382,50 +346,26 @@ def build_fact_cost_metric(
         value_name="value",
     )
 
-    fact["metric_key"] = (
-        fact["source_column"]
-        .map(metric_lookup)
-        .astype(int)
-    )
+    fact["metric_key"] = fact["source_column"].map(metric_lookup).astype(int)
 
-    location_lookup = (
-        dim_location.set_index(
-            "location_id"
-        )["location_key"]
-    )
+    location_lookup = dim_location.set_index("location_id")["location_key"]
 
-    fact["location_key"] = (
-        fact["location_id"]
-        .map(location_lookup)
-    )
+    fact["location_key"] = fact["location_id"].map(location_lookup)
 
-    fact["date_key"] = (
-        fact["time_period"]
-        .dt.strftime("%Y%m%d")
-        .astype(int)
-    )
+    fact["date_key"] = fact["time_period"].dt.strftime("%Y%m%d").astype(int)
 
     fact["source_id"] = SOURCE_ID
 
-    fact["is_published"] = (
-        fact["value"].notna()
-    )
+    fact["is_published"] = fact["value"].notna()
 
-    loaded_at = datetime.now(
-        UTC
-    )
+    loaded_at = datetime.now(UTC)
 
     fact["loaded_at"] = loaded_at
 
     fact["fact_id"] = [
         stable_integer_key(
             "fact",
-            (
-                f"{location_key}:"
-                f"{date_key}:"
-                f"{metric_key}:"
-                f"{SOURCE_ID}"
-            ),
+            (f"{location_key}:{date_key}:{metric_key}:{SOURCE_ID}"),
         )
         for location_key, date_key, metric_key in zip(
             fact["location_key"],
@@ -458,13 +398,9 @@ def build_gold_tables() -> dict[str, pd.DataFrame]:
 
     silver = load_silver_private_rent()
 
-    dim_location = build_dim_location(
-        silver
-    )
+    dim_location = build_dim_location(silver)
 
-    dim_date = build_dim_date(
-        silver
-    )
+    dim_date = build_dim_date(silver)
 
     dim_metric = build_dim_metric()
 
@@ -507,10 +443,7 @@ def write_gold_tables(
 ) -> dict[str, Path]:
     """Write Gold tables as Parquet files."""
 
-    output_directory = (
-        settings.gold_path
-        / "cost_scope"
-    )
+    output_directory = settings.gold_path / "cost_scope"
 
     output_directory.mkdir(
         parents=True,
@@ -520,10 +453,7 @@ def write_gold_tables(
     output_paths: dict[str, Path] = {}
 
     for table_name, dataframe in tables.items():
-        output_path = (
-            output_directory
-            / f"{table_name}.parquet"
-        )
+        output_path = output_directory / f"{table_name}.parquet"
 
         dataframe.to_parquet(
             output_path,
@@ -531,9 +461,7 @@ def write_gold_tables(
             engine="pyarrow",
         )
 
-        output_paths[
-            table_name
-        ] = output_path
+        output_paths[table_name] = output_path
 
         logger.info(
             "Gold table written: %s",
