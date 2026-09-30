@@ -12,7 +12,7 @@ from fastapi import (
 from backend.app.repositories.private_rent_repository import (
     GoldDataNotBuiltError,
     LocationNotFoundError,
-    get_latest_rent_overview,
+    get_location_overview,
     get_metric_history,
     search_locations,
 )
@@ -58,10 +58,14 @@ def search(
 def location_overview(
     location_code: str,
 ) -> dict[str, object]:
-    """Return latest metrics for one CostScope location."""
+    """
+    Return the latest available CostScope metrics for a location.
+
+    Each metric retains its own source-specific reference period.
+    """
 
     try:
-        return get_latest_rent_overview(location_code)
+        return get_location_overview(location_code)
 
     except LocationNotFoundError as exc:
         raise HTTPException(
@@ -88,9 +92,7 @@ def location_history(
         max_length=100,
     ),
 ) -> dict[str, object]:
-    """
-    Return an ordered historical metric series for one location.
-    """
+    """Return an ordered historical metric series."""
 
     try:
         return get_metric_history(

@@ -11,7 +11,7 @@ from fastapi import (
 from backend.app.repositories.private_rent_repository import (
     GoldDataNotBuiltError,
     LocationNotFoundError,
-    get_latest_rent_overview,
+    get_location_overview,
 )
 from backend.app.schemas.postcode import (
     PostcodeOverviewResponse,
@@ -36,16 +36,16 @@ def postcode_overview(
     postcode: str,
 ) -> dict[str, object]:
     """
-    Resolve a UK postcode and return CostScope metrics.
+    Resolve a postcode and return the CostScope location overview.
 
-    The postcode service provides geography only. Cost-of-living
-    statistics continue to come from CostScope's Gold analytical model.
+    Postcodes.io provides geography resolution only. Cost-of-living
+    metrics come from CostScope's analytical Gold layer.
     """
 
     try:
         geography = lookup_postcode(postcode)
 
-        overview = get_latest_rent_overview(str(geography["admin_district_code"]))
+        overview = get_location_overview(str(geography["admin_district_code"]))
 
         return {
             "postcode": geography,
@@ -63,7 +63,8 @@ def postcode_overview(
             status_code=(status.HTTP_404_NOT_FOUND),
             detail=(
                 "The postcode was resolved, but CostScope "
-                f"does not currently contain matching data: {exc}"
+                "does not currently contain matching data: "
+                f"{exc}"
             ),
         ) from exc
 

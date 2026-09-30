@@ -26,6 +26,15 @@ class RentOverview(BaseModel):
     annual_change_percent: float | None
 
 
+class EarningsOverview(BaseModel):
+    """Latest published ASHE earnings metrics."""
+
+    median_annual_pay: float
+    unit: str
+    reference_period: date
+    annual_change_percent: float | None
+
+
 class SourceMetadata(BaseModel):
     """Source information for a CostScope metric."""
 
@@ -35,11 +44,15 @@ class SourceMetadata(BaseModel):
 
 
 class LocationOverviewResponse(BaseModel):
-    """Latest CostScope overview for one location."""
+    """Latest available CostScope metrics for one location."""
 
     location: LocationSummary
-    rent: RentOverview
-    source: SourceMetadata
+
+    # Metrics have independent publication schedules.
+    rent: RentOverview | None = None
+    earnings: EarningsOverview | None = None
+
+    sources: list[SourceMetadata]
 
 
 class LocationSearchResult(BaseModel):

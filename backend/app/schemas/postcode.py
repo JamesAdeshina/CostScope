@@ -4,7 +4,9 @@ Pydantic schemas for postcode resolution.
 
 from pydantic import BaseModel
 
-from backend.app.schemas.location import LocationOverviewResponse
+from backend.app.schemas.location import (
+    LocationOverviewResponse,
+)
 
 
 class PostcodeGeography(BaseModel):
@@ -20,9 +22,7 @@ class PostcodeGeography(BaseModel):
 
 
 class PostcodeOverviewResponse(BaseModel):
-    """
-    CostScope response combining postcode resolution and local metrics.
-    """
+    """Postcode resolution combined with CostScope metrics."""
 
     postcode: PostcodeGeography
     overview: LocationOverviewResponse

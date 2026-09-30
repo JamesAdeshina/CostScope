@@ -349,3 +349,172 @@ def get_metric_history(
             "dataset": ("Price Index of Private Rents, UK: monthly price statistics"),
         },
     }
+
+
+def get_latest_earnings_overview(
+    location_code: str,
+) -> dict[str, object] | None:
+    """
+    Return latest published ASHE earnings for one CostScope location.
+
+    Returns None when the location exists but no published earnings
+    observation is available.
+    """
+
+    tables = load_gold_tables()
+
+    location = find_location(location_code)
+
+    facts = tables["fact_cost_metric"]
+
+    metrics = tables["dim_metric"]
+
+    dates = tables["dim_date"]
+
+    metric_lookup = metrics.loc[
+        metrics["metric_code"].isin(
+            [
+                "EARNINGS_ANNUAL",
+                "EARNINGS_ANNUAL_CHANGE",
+            ]
+        )
+    ][
+        [
+            "metric_key",
+            "metric_code",
+        ]
+    ]
+
+    if metric_lookup.empty:
+        return None
+
+    location_key = int(location["location_key"])
+
+    location_facts = facts.loc[facts["location_key"] == location_key].copy()
+
+    location_facts = location_facts.merge(
+        metric_lookup,
+        on="metric_key",
+        how="inner",
+    )
+
+    location_facts = location_facts.merge(
+        dates[
+            [
+                "date_key",
+                "date",
+            ]
+        ],
+        on="date_key",
+        how="left",
+        validate="many_to_one",
+    )
+
+    annual_pay = location_facts.loc[
+        (location_facts["metric_code"] == "EARNINGS_ANNUAL")
+        & (location_facts["is_published"])
+    ].sort_values(
+        "date",
+        ascending=False,
+    )
+
+    if annual_pay.empty:
+        return None
+
+    latest_pay = annual_pay.iloc[0]
+
+    reference_date = latest_pay["date"]
+
+    annual_change_rows = location_facts.loc[
+        (location_facts["metric_code"] == "EARNINGS_ANNUAL_CHANGE")
+        & (location_facts["date"] == reference_date)
+        & (location_facts["is_published"])
+    ]
+
+    annual_change = None
+
+    if not annual_change_rows.empty:
+        annual_change = float(annual_change_rows.iloc[0]["value"])
+
+    return {
+        "median_annual_pay": float(latest_pay["value"]),
+        "unit": "GBP/year",
+        "reference_period": (pd.Timestamp(reference_date).date()),
+        "annual_change_percent": (annual_change),
+    }
+
+
+def get_location_overview(
+    location_code: str,
+) -> dict[str, object]:
+    """
+    Return the latest available CostScope overview for one location.
+
+    Individual datasets retain independent reference periods because
+    CostScope does not pretend asynchronous statistical releases are
+    contemporaneous.
+    """
+
+    location = find_location(location_code)
+
+    official_code = location["official_area_code"]
+
+    location_payload = {
+        "location_id": str(location["location_id"]),
+        "location_code": (
+            str(official_code)
+            if pd.notna(official_code)
+            else str(location["location_id"])
+        ),
+        "name": str(location["location_name"]),
+        "region_or_country": (
+            None
+            if pd.isna(location["region_or_country_name"])
+            else str(location["region_or_country_name"])
+        ),
+    }
+
+    rent_payload = None
+
+    try:
+        existing_rent = get_latest_rent_overview(location_code)
+
+        rent_payload = existing_rent.get("rent")
+
+    except LocationNotFoundError:
+        rent_payload = None
+
+    earnings_payload = get_latest_earnings_overview(location_code)
+
+    sources: list[dict[str, str]] = []
+
+    if rent_payload is not None:
+        sources.append(
+            {
+                "source_code": "ONS_PIPR",
+                "publisher": ("Office for National Statistics"),
+                "dataset": (
+                    "Price Index of Private Rents, UK: monthly price statistics"
+                ),
+            }
+        )
+
+    if earnings_payload is not None:
+        sources.append(
+            {
+                "source_code": "ONS_ASHE",
+                "publisher": ("Office for National Statistics"),
+                "dataset": (
+                    "Earnings and hours worked, "
+                    "place of residence by local authority: "
+                    "ASHE Table 8"
+                ),
+            }
+        )
+
+    return {
+        "location": location_payload,
+        "rent": rent_payload,
+        "earnings": earnings_payload,
+        "sources": sources,
+    }
