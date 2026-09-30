@@ -17,7 +17,7 @@ class LocationSummary(BaseModel):
 
 
 class RentOverview(BaseModel):
-    """Latest published headline private-rent metrics."""
+    """Latest private-rent metrics."""
 
     monthly_rent: float
     unit: str
@@ -27,7 +27,7 @@ class RentOverview(BaseModel):
 
 
 class EarningsOverview(BaseModel):
-    """Latest published ASHE earnings metrics."""
+    """Latest ASHE earnings metrics."""
 
     median_annual_pay: float
     unit: str
@@ -35,8 +35,31 @@ class EarningsOverview(BaseModel):
     annual_change_percent: float | None
 
 
+class InflationOverview(BaseModel):
+    """Latest UK CPI metrics."""
+
+    annual_rate_percent: float
+    monthly_rate_percent: float | None
+    index_value: float | None
+    index_base: str
+    reference_period: date
+    geography_name: str
+    geography_code: str
+
+
+class UnemploymentOverview(BaseModel):
+    """Latest model-based unemployment estimate."""
+
+    rate_percent: float
+    unit: str
+    reference_period: date
+    geography_name: str
+    geography_code: str
+    methodology: str
+
+
 class SourceMetadata(BaseModel):
-    """Source information for a CostScope metric."""
+    """Source metadata."""
 
     source_code: str
     publisher: str
@@ -44,19 +67,23 @@ class SourceMetadata(BaseModel):
 
 
 class LocationOverviewResponse(BaseModel):
-    """Latest available CostScope metrics for one location."""
+    """Latest available CostScope metrics."""
 
     location: LocationSummary
 
-    # Metrics have independent publication schedules.
     rent: RentOverview | None = None
+
     earnings: EarningsOverview | None = None
+
+    inflation: InflationOverview | None = None
+
+    unemployment: UnemploymentOverview | None = None
 
     sources: list[SourceMetadata]
 
 
 class LocationSearchResult(BaseModel):
-    """One result from location search."""
+    """One location-search result."""
 
     location_id: str
     location_code: str
@@ -65,14 +92,14 @@ class LocationSearchResult(BaseModel):
 
 
 class MetricHistoryObservation(BaseModel):
-    """One historical metric observation."""
+    """One historical observation."""
 
     reference_period: date
     value: float
 
 
 class MetricHistoryResponse(BaseModel):
-    """Historical CostScope metric series."""
+    """Historical metric series."""
 
     location: LocationSummary
     metric_code: str

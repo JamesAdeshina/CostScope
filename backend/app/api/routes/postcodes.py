@@ -11,10 +11,12 @@ from fastapi import (
 from backend.app.repositories.private_rent_repository import (
     GoldDataNotBuiltError,
     LocationNotFoundError,
-    get_location_overview,
 )
 from backend.app.schemas.postcode import (
     PostcodeOverviewResponse,
+)
+from backend.app.services.location_overview_service import (
+    get_location_overview,
 )
 from backend.app.services.postcode_service import (
     InvalidPostcodeError,
@@ -36,10 +38,10 @@ def postcode_overview(
     postcode: str,
 ) -> dict[str, object]:
     """
-    Resolve a postcode and return the CostScope location overview.
+    Resolve a UK postcode and return CostScope metrics.
 
-    Postcodes.io provides geography resolution only. Cost-of-living
-    metrics come from CostScope's analytical Gold layer.
+    Postcodes.io supplies geography only. Analytical metrics continue to
+    come from CostScope Gold.
     """
 
     try:

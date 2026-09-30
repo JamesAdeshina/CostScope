@@ -12,7 +12,6 @@ from fastapi import (
 from backend.app.repositories.private_rent_repository import (
     GoldDataNotBuiltError,
     LocationNotFoundError,
-    get_location_overview,
     get_metric_history,
     search_locations,
 )
@@ -20,6 +19,9 @@ from backend.app.schemas.location import (
     LocationOverviewResponse,
     LocationSearchResult,
     MetricHistoryResponse,
+)
+from backend.app.services.location_overview_service import (
+    get_location_overview,
 )
 
 router = APIRouter(
@@ -58,11 +60,7 @@ def search(
 def location_overview(
     location_code: str,
 ) -> dict[str, object]:
-    """
-    Return the latest available CostScope metrics for a location.
-
-    Each metric retains its own source-specific reference period.
-    """
+    """Return the unified CostScope overview for one location."""
 
     try:
         return get_location_overview(location_code)
