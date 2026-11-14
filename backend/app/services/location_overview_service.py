@@ -4,11 +4,11 @@ Compose CostScope overview metrics from domain repositories.
 
 from __future__ import annotations
 
+from backend.app.repositories.database_repository import (
+    get_location_overview as get_local_location_overview,
+)
 from backend.app.repositories.inflation_repository import (
     get_latest_inflation_overview,
-)
-from backend.app.repositories.private_rent_repository import (
-    get_location_overview as get_local_location_overview,
 )
 from backend.app.repositories.unemployment_repository import (
     get_latest_unemployment_overview,

@@ -9,11 +9,13 @@ from fastapi import (
     status,
 )
 
+from backend.app.repositories.database_repository import (
+    get_metric_history,
+    search_locations,
+)
 from backend.app.repositories.private_rent_repository import (
     GoldDataNotBuiltError,
     LocationNotFoundError,
-    get_metric_history,
-    search_locations,
 )
 from backend.app.schemas.location import (
     LocationOverviewResponse,
@@ -55,12 +57,12 @@ def search(
 
 @router.get(
     "/locations/{location_code}/overview",
-    response_model=LocationOverviewResponse,
+    response_model=(LocationOverviewResponse),
 )
 def location_overview(
     location_code: str,
 ) -> dict[str, object]:
-    """Return the unified CostScope overview for one location."""
+    """Return unified CostScope overview."""
 
     try:
         return get_location_overview(location_code)
@@ -80,7 +82,7 @@ def location_overview(
 
 @router.get(
     "/locations/{location_code}/history",
-    response_model=MetricHistoryResponse,
+    response_model=(MetricHistoryResponse),
 )
 def location_history(
     location_code: str,
@@ -90,7 +92,7 @@ def location_history(
         max_length=100,
     ),
 ) -> dict[str, object]:
-    """Return an ordered historical metric series."""
+    """Return ordered historical metric series."""
 
     try:
         return get_metric_history(
