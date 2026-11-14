@@ -1,0 +1,62 @@
+name: Refresh CostScope Data
+
+on:
+  workflow_dispatch:
+    inputs:
+      domain:
+        description: "Dataset to refresh"
+        required: true
+        default: "inflation"
+        type: choice
+        options:
+          - inflation
+          - private_rent
+          - earnings
+          - unemployment
+          - all
+
+permissions:
+  contents: read
+
+jobs:
+  refresh:
+    name: Refresh ${{ inputs.domain }}
+    runs-on: ubuntu-latest
+
+    timeout-minutes: 30
+
+    env:
+      PYTHONUNBUFFERED: "1"
+      COSTSCOPE_DATABASE_URL: ${{ secrets.COSTSCOPE_DATABASE_URL }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Show refresh configuration
+        run: |
+          echo "CostScope refresh"
+          echo "Domain: ${{ inputs.domain }}"
+          python --version
+
+      - name: Refresh selected dataset
+        if: ${{ inputs.domain != 'all' }}
+        run: |
+          python -m scripts.refresh_costscope \
+            --only "${{ inputs.domain }}"
+
+      - name: Refresh all datasets
+        if: ${{ inputs.domain == 'all' }}
+        run: |
+          python -m scripts.refresh_costscope
