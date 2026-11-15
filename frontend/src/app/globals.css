@@ -1,0 +1,136 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #f3f3ee;
+  --ink: #1a1e24;
+  --muted: #6b6f72;
+  --card: #ffffff;
+  --soft: #ebebe5;
+  --lime: #e8ef7a;
+  --blue: #0a84ff;
+  --green: #1a8f5c;
+  --radius: 28px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--bg);
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family:
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    sans-serif;
+  line-height: 1.45;
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+input,
+select {
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+/* Keep button foreground colours controlled by Tailwind utilities.
+ * This is intentionally NOT `color: inherit`; unlayered global CSS can
+ * otherwise override Tailwind v4 utilities such as `text-white`. */
+
+::selection {
+  background: var(--lime);
+  color: var(--ink);
+}
+
+:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+}
+
+/* ------------------------------------------------------------------
+ * Motion (ported from costscope.html)
+ * ------------------------------------------------------------------ */
+
+/* Every page fades and rises in on navigation. */
+main {
+  animation: cs-rise 0.5s ease;
+}
+
+@keyframes cs-rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes cs-pulse {
+  from {
+    transform: scale(0.6);
+    opacity: 0.8;
+  }
+  to {
+    transform: scale(3);
+    opacity: 0;
+  }
+}
+
+@keyframes cs-flash {
+  from {
+    background-color: #fff7b0;
+  }
+}
+
+/* Element that eases in (used for compare panel, modal columns). */
+.cs-rise {
+  animation: cs-rise 0.5s ease both;
+}
+
+/* Map pin pulse ring. */
+.cs-pulse {
+  fill: none;
+  stroke: #1a1e24;
+  stroke-width: 2;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: cs-pulse 2s ease-out infinite;
+}
+
+/* Table cell highlight when a comparison value changes. */
+.cs-flash {
+  animation: cs-flash 0.6s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .cs-pulse {
+    animation: none;
+    opacity: 0;
+  }
+}
